@@ -182,7 +182,7 @@
             gap: 12px;
         }
 
-        .option-btn {
+        .option {
             padding: 15px 20px;
             text-align: left;
             background: var(--bg-primary);
@@ -194,26 +194,26 @@
             color: var(--text-primary);
         }
 
-        .option-btn:hover {
+        .option:hover {
             border-color: var(--accent-blue);
             background: var(--bg-tertiary);
         }
 
-        .option-btn.selected {
+        .option.selected {
             background: #dbeafe;
             border-color: var(--accent-blue);
             color: #1e3a8a;
         }
 
-        .option-btn.correct {
-            background: #d1fae5;
-            border-color: var(--correct);
+        .option.correct {
+            background: #d1fae5 !important;
+            border-color: var(--correct) !important;
             color: #064e3b;
         }
 
-        .option-btn.incorrect {
-            background: #fee2e2;
-            border-color: var(--incorrect);
+        .option.incorrect {
+            background: #fee2e2 !important;
+            border-color: var(--incorrect) !important;
             color: #7f1d1d;
         }
 
