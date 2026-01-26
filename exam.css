@@ -321,6 +321,19 @@
             font-weight: bold;
         }
 
+        /* Navigator Feedback Styles */
+        .nav-item-btn.nav-correct {
+            background: #d1fae5 !important;
+            border-color: var(--correct) !important;
+            color: #065f46;
+        }
+
+        .nav-item-btn.nav-incorrect {
+            background: #fee2e2 !important;
+            border-color: var(--incorrect) !important;
+            color: #7f1d1d;
+        }
+
         .legend {
             display: flex;
             gap: 20px;
