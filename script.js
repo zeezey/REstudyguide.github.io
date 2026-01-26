@@ -253,6 +253,21 @@ const sectionIds = ['mnemonics', 'water', 'subdivision', 'azlaw', 'property', 'e
     'legaldesc', 'liens', 'closing', 'fairhousing', 'environmental', 'riskmanagement',
     'keydates', 'examtips', 'quiz', 'math'];
 
+// ===== MOBILE SIDEBAR =====
+function toggleMobileSidebar() {
+    document.querySelector('.sidebar').classList.toggle('active');
+    document.querySelector('.sidebar-overlay').classList.toggle('active');
+}
+
+// Close sidebar when clicking a link on mobile
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            toggleMobileSidebar();
+        }
+    });
+});
+
 function initializeProgress() {
     const progress = JSON.parse(localStorage.getItem('studyProgress') || '{}');
 

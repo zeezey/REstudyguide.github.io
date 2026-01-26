@@ -26,6 +26,9 @@
 
 <body>
 
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" title="Toggle Menu">☰</button>
+
     <!-- Floating Toolbar -->
     <div class="toolbar">
         <button onclick="toggleDarkMode()" title="Toggle Dark Mode (D)" id="darkModeBtn">🌙</button>
@@ -41,6 +44,7 @@
         <button onclick="showKeyboardShortcuts()" title="Keyboard Shortcuts (?)">⌨️</button>
     </div>
 
+    <div class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
     <div class="sidebar">
         <div class="brand">🌵 Arizona RE Exam Prep</div>
 
