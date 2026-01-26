@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arizona Real Estate Exam Simulator</title>
+    <link rel="stylesheet" href="exam.css">
+
+</head>
+
+<body>
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">🌙</button>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="shortcuts-help" id="shortcutsHelp">
+        <h4>⌨️ Keyboard Shortcuts</h4>
+        <div class="shortcut-item"><span>Select answer</span><span class="shortcut-key">1-4</span></div>
+        <div class="shortcut-item"><span>Previous</span><span class="shortcut-key">←</span></div>
+        <div class="shortcut-item"><span>Next</span><span class="shortcut-key">→</span></div>
+        <div class="shortcut-item"><span>Flag question</span><span class="shortcut-key">F</span></div>
+        <div class="shortcut-item"><span>Bookmark</span><span class="shortcut-key">B</span></div>
+        <div class="shortcut-item"><span>Toggle help</span><span class="shortcut-key">?</span></div>
+    </div>
+
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <h1>🌵 Arizona Real Estate Exam Simulator</h1>
+            <p>1,660+ questions covering all exam topics. Customize your practice session below.</p>
+
+            <!-- Stats Dashboard -->
+            <div class="stats-dashboard" id="statsDashboard">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalExams">0</div>
+                    <div class="stat-label">Exams Taken</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgScore">0%</div>
+                    <div class="stat-label">Avg Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="missedCount">0</div>
+                    <div class="stat-label">Missed Questions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bookmarkCount">0</div>
+                    <div class="stat-label">Bookmarked</div>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="settings-panel">
+                <h3>⚙️ Quiz Settings</h3>
+
+                <!-- Quiz Length -->
+                <div class="settings-section">
+                    <label>Number of Questions:</label>
+                    <div class="quiz-length-options">
+                        <button class="quiz-length-btn" onclick="selectQuizLength(20)">20</button>
+                        <button class="quiz-length-btn" onclick="selectQuizLength(50)">50</button>
+                        <button class="quiz-length-btn" onclick="selectQuizLength(100)">100</button>
+                        <button class="quiz-length-btn selected" onclick="selectQuizLength(180)">180</button>
+                    </div>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="settings-section">
+                    <label>Categories: <span id="categoryCount">(All selected)</span></label>
+                    <div style="margin-bottom: 10px;">
+                        <button class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;"
+                            onclick="selectAllCategories()">Select All</button>
+                        <button class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;"
+                            onclick="deselectAllCategories()">Deselect All</button>
+                    </div>
+                    <div class="category-grid" id="categoryGrid">
+                        <!-- Categories populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Weighted Random Toggle -->
+                <div class="settings-section">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="weightedRandom" style="width: 18px; height: 18px;">
+                        <span>Prioritize previously missed questions</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 10px;">
+                        <input type="checkbox" id="shuffleAnswers" checked style="width: 18px; height: 18px;">
+                        <span>Shuffle answer options</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="resumePrompt" class="hidden"
+                style="background: #fef3c7; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <p style="margin-bottom: 15px;">📋 You have a saved exam in progress. Would you like to resume?</p>
+                <button class="btn btn-warning" onclick="resumeExam()">Resume Exam</button>
+                <button class="btn btn-secondary" onclick="startNewExam()">Start New Exam</button>
+            </div>
+
+            <!-- Main Start Buttons -->
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button id="startBtn" class="btn btn-primary btn-lg" style="padding: 15px 40px; font-size: 1.2rem;"
+                    onclick="startNewExam()">🎯 Exam Mode</button>
+                <button class="btn btn-success btn-lg" style="padding: 15px 40px; font-size: 1.2rem;"
+                    onclick="startStudyMode()">📚 Study Mode</button>
+            </div>
+            <p style="margin-top: 15px; color: var(--text-secondary); font-size: 0.9rem;">Study Mode: See correct answer
+                immediately after each question</p>
+
+            <!-- Practice Modes -->
+            <div class="practice-modes">
+                <button class="practice-mode-btn" id="missedBtn" onclick="startMissedMode()">🔄 Practice Missed (<span
+                        id="missedBtnCount">0</span>)</button>
+                <button class="practice-mode-btn" id="bookmarkedBtn" onclick="startBookmarkedMode()">⭐ Practice
+                    Bookmarked (<span id="bookmarkedBtnCount">0</span>)</button>
+                <button class="practice-mode-btn" onclick="openCheatSheet()">📘 Study Cheat Sheet</button>
+            </div>
+
+            <p style="margin-top: 20px;"><a href="index.html" style="color: #3b82f6;">← Back to Study
+                    Guide</a></p>
+
+            <!-- Previous Scores Log -->
+            <div id="scoresLog" class="scores-log">
+                <h3>
+                    <span>📊 Previous Scores</span>
+                    <button class="clear-btn" onclick="clearScoreHistory()">Clear History</button>
+                </h3>
+                <div id="scoresContainer"></div>
+            </div>
+        </div>
+
+
+        <!-- Exam Screen -->
+        <div id="examScreen" class="hidden">
+            <div class="header">
+                <h1>Arizona RE Exam</h1>
+                <div class="timer" id="timer">5:00:00</div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+
+            <div class="question-card">
+                <div class="question-header">
+                    <span class="question-number" id="questionNumber">Question 1 of 180</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="category-tag" id="categoryTag">Category</span>
+                        <button class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmark()"
+                            title="Bookmark this question">☆</button>
+                    </div>
+                </div>
+                <div class="question-text" id="questionText">Loading question...</div>
+                <div class="options" id="optionsContainer"></div>
+                <div class="explanation" id="explanation">
+                    <h4>✓ Explanation</h4>
+                    <p id="explanationText"></p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()">← Previous</button>
+                <button class="btn btn-warning" id="flagBtn" onclick="toggleFlag()">🚩 Mark for Review</button>
+                <button class="btn btn-secondary" id="nextBtn" onclick="nextQuestion()">Next →</button>
+            </div>
+
+            <div class="navigator">
+                <h3>Question Navigator <span id="answeredCount">(0/180 answered)</span></h3>
+                <div class="nav-grid" id="navGrid"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: white; border-color: #e2e8f0;"></div> Unanswered
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #d1fae5; border-color: #10b981;"></div> Answered
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #fef3c7; border-color: #f59e0b;"></div> Flagged
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #dbeafe; border-color: #3b82f6;"></div> Current
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-success" onclick="submitExam()" style="padding: 15px 40px;">Submit Exam</button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="hidden">
+            <div class="results-screen">
+                <h1 id="resultsTitle">Exam Complete!</h1>
+                <div class="score-circle" id="scoreCircle">
+                    <span id="scorePercent">0%</span>
+                    <span id="scoreText">0/180</span>
+                </div>
+                <p id="passFailText" style="font-size: 1.5rem; margin-bottom: 30px;"></p>
+
+                <button class="btn btn-primary" onclick="reviewExam()">Review Answers</button>
+                <button class="btn btn-secondary" onclick="startNewExam()">Take New Exam</button>
+                <button class="btn btn-warning" onclick="exportResults()">📄 Export Results</button>
+                <p style="margin-top: 20px;"><a href="index.html" style="color: #3b82f6;">← Back to Study
+                        Guide</a></p>
+
+                <div class="results-breakdown" id="resultsBreakdown">
+                    <h3>Score by Category</h3>
+                    <div id="categoryScores"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cheat Sheet Modal -->
+    <div id="cheatSheetModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeCheatSheet()">&times;</span>
+            <h2 style="color: var(--text-primary); margin-bottom: 20px;">📘 Commonly Confused Concepts & Mnemonics</h2>
+
+            <div class="cheat-sheet-grid">
+                <!-- TYPES OF TENANCY (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Types of Tenancy (Ownership)</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom:8px;"><strong>Tenancy in Common:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">No survivorship. Unequal shares ok. Heirs
+                                    inherit.</span></li>
+                            <li style="margin-bottom:8px;"><strong>Joint Tenancy (PITT):</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Right of survivorship. Equal shares. Time,
+                                    Title, Interest, Possession.</span></li>
+                            <li style="margin-bottom:8px;"><strong>Community Property:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Spouses (AZ). 50/50 ownership. Heirs inherit
+                                    50%.</span></li>
+                            <li><strong>Comm. Prop. WROS:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Spouses. Passes to surviving spouse
+                                    automatically.</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- ESTATES IN LAND (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Estates in Land</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom:5px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                                <strong>FREEHOLD (Ownership)</strong>
+                            </li>
+                            <li style="margin-bottom:8px;"><strong>Fee Simple Absolute:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Highest degree of ownership. Forever.</span>
+                            </li>
+                            <li style="margin-bottom:8px;"><strong>Fee Simple Defeasible:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Conditional property (Determinable/Condition
+                                    Subsequent).</span></li>
+                            <li style="margin-bottom:8px;"><strong>Life Estate:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Based on a life (Tenant or Pur Autre Vie).
+                                    Reverts to Grantor or Remainder.</span></li>
+
+                            <li
+                                style="margin-top:15px; margin-bottom:5px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                                <strong>LEASEHOLD (Less than Freehold)</strong>
+                            </li>
+                            <li style="margin-bottom:8px;"><strong>Estate for Years:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Definite end date. No notice needed.</span>
+                            </li>
+                            <li style="margin-bottom:8px;"><strong>Periodic Estate:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Month-to-month. Notice required.</span></li>
+                            <li style="margin-bottom:8px;"><strong>Estate at Will:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Indefinite duration. Permission
+                                    granted.</span></li>
+                            <li><strong>Estate at Sufferance:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Holdover tenant without permission.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- OR/EE RULE (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">The OR/EE Rule</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px;"><strong>Suffixes tell the story:</strong></p>
+                        <ul style="list-style: none; padding: 0; margin-bottom:10px;">
+                            <li><span class="mnemonic-highlight">OR</span> = Giver (Act<strong>OR</strong>,
+                                Don<strong>OR</strong>)</li>
+                            <li><span class="mnemonic-highlight">EE</span> = Receiver (Recip<strong>EE</strong>)</li>
+                        </ul>
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 5px 0;">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><strong>MortgagOR</strong> = Borrower (Gives pledge)</li>
+                            <li><strong>MortgagEE</strong> = Lender (Receives pledge)</li>
+                            <li><strong>VendOR</strong> = Seller</li>
+                            <li><strong>VendEE</strong> = Buyer (with land contract)</li>
+                            <li><strong>OptionOR</strong> = Seller (Gives option)</li>
+                            <li><strong>OptionEE</strong> = Buyer (Receives option)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- VALID CONTRACT (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Valid Contract (COLIC)</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:10px;"><strong>COLIC</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">C</span> - Competent Parties (Age 18+, Sane)</li>
+                            <li><span class="mnemonic-highlight">O</span> - Offer & Acceptance (Mutual Consent)</li>
+                            <li><span class="mnemonic-highlight">L</span> - Legal Purpose (Lawful Object)</li>
+                            <li><span class="mnemonic-highlight">I</span> - In Writing (Statute of Frauds)</li>
+                            <li><span class="mnemonic-highlight">C</span> - Consideration (Something of Value)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- CLOSING STATEMENT (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Debits vs. Credits</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px;"><strong>Closing Statement Rules:</strong></p>
+                        <ul style="list-style: none; padding: 0; margin-bottom:10px;">
+                            <li><span style="color:#ef4444">Debit</span> = Money you OWE / PAY 💸</li>
+                            <li><span style="color:#10b981">Credit</span> = Money you GET / SAVE 💰</li>
+                        </ul>
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 5px 0;">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><strong>Purchase Price:</strong> Debit Buyer, Credit Seller</li>
+                            <li><strong>New Loan:</strong> Credit Buyer</li>
+                            <li><strong>Earnest Money:</strong> Credit Buyer</li>
+                            <li><strong>Prorated Taxes:</strong> Debit Seller, Credit Buyer</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FAIR HOUSING (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Fair Housing (FRESH CORN)</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px;"><strong>Protected Classes:</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">F</span>amilial Status</li>
+                            <li><span class="mnemonic-highlight">R</span>ace</li>
+                            <li><span class="mnemonic-highlight">E</span>qual (Se<span
+                                    style="text-decoration: underline;">x</span>)</li>
+                            <li><span class="mnemonic-highlight">S</span>ex</li>
+                            <li><span class="mnemonic-highlight">H</span>andicap (Disability)</li>
+                            <li><span class="mnemonic-highlight">C</span>olor</li>
+                            <li><span class="mnemonic-highlight">O</span>pportunity (Nati<span
+                                    style="text-decoration: underline;">o</span>nal Origin)</li>
+                            <li><span class="mnemonic-highlight">R</span>eligion</li>
+                            <li><span class="mnemonic-highlight">N</span>ational Origin</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- CIVIL RIGHTS TIMELINE (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Civil Rights Timeline</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom:8px;"><strong>1866:</strong> <span
+                                    style="color:#ef4444; font-weight:bold;">Race</span> only.<br><span
+                                    style="color:#64748b; font-size:0.9em;">(Jones v. Mayer, No exceptions!)</span></li>
+                            <li style="margin-bottom:8px;"><strong>1968:</strong> <span
+                                    style="color:#10b981; font-weight:bold;">Fair Housing Act</span>.<br><span
+                                    style="color:#64748b; font-size:0.9em;">(Race, Color, Religion, Nat. Origin)</span>
+                            </li>
+                            <li style="margin-bottom:8px;"><strong>1974:</strong> Added <span
+                                    style="color:#3b82f6; font-weight:bold;">Sex</span> (Gender).</li>
+                            <li><strong>1988:</strong> Added <span
+                                    style="color:#8b5cf6; font-weight:bold;">Disability</span> & <span
+                                    style="color:#8b5cf6; font-weight:bold;">Familial</span>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 7 PROTECTED CLASSES (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">7 Protected Classes</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px; font-style:italic;">"Realtors Can Really Sell Houses Fast Now"</p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">R</span>ealtors = <strong>Race</strong></li>
+                            <li><span class="mnemonic-highlight">C</span>an = <strong>Color</strong></li>
+                            <li><span class="mnemonic-highlight">R</span>eally = <strong>Religion</strong></li>
+                            <li><span class="mnemonic-highlight">S</span>ell = <strong>Sex</strong> (Gender)</li>
+                            <li><span class="mnemonic-highlight">H</span>ouses = <strong>Handicap</strong> (Disability)
+                            </li>
+                            <li><span class="mnemonic-highlight">F</span>ast = <strong>Familial Status</strong></li>
+                            <li><span class="mnemonic-highlight">N</span>ow = <strong>National Origin</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- TYPES OF AGENTS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Types of Agents</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom:8px;"><strong>Universal:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Power over EVERYTHING (Unlimited POA)</span>
+                            </li>
+                            <li style="margin-bottom:8px;"><strong>General:</strong><br><span
+                                    style="color:#64748b; font-size:0.9em;">Power over ONE AREA (Property
+                                    Manager)</span></li>
+                            <li><strong>Special:</strong><br><span style="color:#64748b; font-size:0.9em;">Power over
+                                    ONE ACT (Listing Agent/Realtor)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FIDUCIARY DUTIES (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Fiduciary Duties (OLD CAR)</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">O</span>bedience</li>
+                            <li><span class="mnemonic-highlight">L</span>oyalty</li>
+                            <li><span class="mnemonic-highlight">D</span>isclosure</li>
+                            <li><span class="mnemonic-highlight">C</span>onfidentiality</li>
+                            <li><span class="mnemonic-highlight">A</span>ccounting</li>
+                            <li><span class="mnemonic-highlight">R</span>easonable Care</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- GOVERNMENT POWERS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Government Powers (PETE)</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">P</span>olice Power <span
+                                    style="color:#64748b; font-size:0.9em;">(Zoning, Codes)</span></li>
+                            <li><span class="mnemonic-highlight">E</span>minent Domain <span
+                                    style="color:#64748b; font-size:0.9em;">(Take for Public Use)</span></li>
+                            <li><span class="mnemonic-highlight">T</span>axation <span
+                                    style="color:#64748b; font-size:0.9em;">(Fund Services)</span></li>
+                            <li><span class="mnemonic-highlight">E</span>scheat <span
+                                    style="color:#64748b; font-size:0.9em;">(No Heirs = State Takes)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- VALUE CHARACTERISTICS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Value Characteristics (DUST)</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">D</span>emand</li>
+                            <li><span class="mnemonic-highlight">U</span>tility</li>
+                            <li><span class="mnemonic-highlight">S</span>carcity</li>
+                            <li><span class="mnemonic-highlight">T</span>ransferability</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- BUNDLE OF RIGHTS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Bundle of Rights (DEEPC)</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">D</span>isposition <span
+                                    style="color:#64748b; font-size:0.9em;">(Sell, Will)</span></li>
+                            <li><span class="mnemonic-highlight">E</span>njoyment <span
+                                    style="color:#64748b; font-size:0.9em;">(No Harassment)</span></li>
+                            <li><span class="mnemonic-highlight">E</span>xclusion <span
+                                    style="color:#64748b; font-size:0.9em;">(Keep Others Out)</span></li>
+                            <li><span class="mnemonic-highlight">P</span>ossession <span
+                                    style="color:#64748b; font-size:0.9em;">(To Occupy)</span></li>
+                            <li><span class="mnemonic-highlight">C</span>ontrol <span
+                                    style="color:#64748b; font-size:0.9em;">(Use Legally)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- JOINT TENANCY (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Joint Tenancy (PITT)</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px; font-style:italic;">"The 4 Unities of Joint Tenancy"</p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">P</span>ossession <span
+                                    style="color:#64748b; font-size:0.9em;">(Equal Right)</span></li>
+                            <li><span class="mnemonic-highlight">I</span>nterest <span
+                                    style="color:#64748b; font-size:0.9em;">(Equal Share)</span></li>
+                            <li><span class="mnemonic-highlight">T</span>ime <span
+                                    style="color:#64748b; font-size:0.9em;">(Acquire Same Time)</span></li>
+                            <li><span class="mnemonic-highlight">T</span>itle <span
+                                    style="color:#64748b; font-size:0.9em;">(Same Document)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ESSENTIAL NUMBERS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Essential Numbers</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom:8px;"><strong>1 Acre:</strong> <span
+                                    style="color:#ef4444; font-weight:bold;">43,560</span> sq ft<br><span
+                                    style="color:#64748b; font-size:0.9em;">("4 Old Ladies going 35 in a 60")</span>
+                            </li>
+                            <li><strong>1 Section:</strong> <span style="color:#3b82f6; font-weight:bold;">640</span>
+                                Acres<br><span style="color:#64748b; font-size:0.9em;">(1 Mile x 1 Mile)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WATER RIGHTS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Water Rights</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">R</span>iparian = <strong>River</strong> <span
+                                    style="color:#64748b; font-size:0.9em;">(Moving Water)</span></li>
+                            <li><span class="mnemonic-highlight">L</span>ittoral = <strong>Lake</strong> <span
+                                    style="color:#64748b; font-size:0.9em;">(Standing Water)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- CAP RATE MATH (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Cap Rate Math (IRV)</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px; font-style:italic;">Make a T-Bar:</p>
+                        <div
+                            style="font-family: monospace; background: #f1f5f9; padding: 5px; border-radius: 4px; text-align: center;">
+                            <div>Income (NOI)</div>
+                            <div style="border-top: 2px solid #334155; display: flex; justify-content: space-around;">
+                                <span>Rate</span> <span>x</span> <span>Value</span>
+                            </div>
+                        </div>
+                        <ul style="list-style: none; padding: 0; margin-top: 5px; font-size: 0.9em;">
+                            <li>I ÷ R = V</li>
+                            <li>I ÷ V = R</li>
+                            <li>R x V = I</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- TYPES OF DEEDS (Requested) -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Types of Deeds</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom:8px;"><strong>General Warranty:</strong><br><span
+                                    style="color:#10b981; font-weight:bold;">BEST</span> Protection. Covers entire
+                                history.</li>
+                            <li><strong>Quitclaim:</strong><br><span
+                                    style="color:#ef4444; font-weight:bold;">LEAST</span> Protection. "I give you
+                                whatever I have (if anything)." Used to clear clouds.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- OH NO MORE MONEY -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Property Tax Dates</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom: 10px;"><strong>OH NO MORE MONEY</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">O</span> - October (1st payment due)</li>
+                            <li><span class="mnemonic-highlight">N</span> - November (1st payment delinquent)</li>
+                            <li><span class="mnemonic-highlight">M</span> - March (2nd payment due)</li>
+                            <li><span class="mnemonic-highlight">M</span> - May (2nd payment delinquent)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- OLDCAR -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Fiduciary Duties</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom: 10px;"><strong>OLD CAR</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">O</span> - Obedience</li>
+                            <li><span class="mnemonic-highlight">L</span> - Loyalty</li>
+                            <li><span class="mnemonic-highlight">D</span> - Disclosure</li>
+                            <li><span class="mnemonic-highlight">C</span> - Confidentiality</li>
+                            <li><span class="mnemonic-highlight">A</span> - Accounting</li>
+                            <li><span class="mnemonic-highlight">R</span> - Reasonable Care</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MARIA -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Fixtures Tests</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom: 10px;"><strong>MARIA</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">M</span> - Method of attachment</li>
+                            <li><span class="mnemonic-highlight">A</span> - Adaptability</li>
+                            <li><span class="mnemonic-highlight">R</span> - Relationship of parties</li>
+                            <li><span class="mnemonic-highlight">I</span> - Intent of annexor (Most important)</li>
+                            <li><span class="mnemonic-highlight">A</span> - Agreement (Contracts override all)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- PETE -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Government Powers</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom: 10px;"><strong>PETE</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">P</span> - Police Power (Zoning, Codes)</li>
+                            <li><span class="mnemonic-highlight">E</span> - Eminent Domain (Taking for public use)</li>
+                            <li><span class="mnemonic-highlight">T</span> - Taxation</li>
+                            <li><span class="mnemonic-highlight">E</span> - Escheat (No heirs -> State)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- DUST -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Elements of Value</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom: 10px;"><strong>DUST</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">D</span> - Demand (Effective demand)</li>
+                            <li><span class="mnemonic-highlight">U</span> - Utility (Usefulness)</li>
+                            <li><span class="mnemonic-highlight">S</span> - Scarcity</li>
+                            <li><span class="mnemonic-highlight">T</span> - Transferability</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- UPTEE -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Bundle of Rights</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom: 10px;"><strong>UPTEE</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><span class="mnemonic-highlight">U</span> - Use (Control)</li>
+                            <li><span class="mnemonic-highlight">P</span> - Possess</li>
+                            <li><span class="mnemonic-highlight">T</span> - Transfer (Disposition)</li>
+                            <li><span class="mnemonic-highlight">E</span> - Encumber (Borrow against)</li>
+                            <li><span class="mnemonic-highlight">E</span> - Enjoy (Exclude others)</li>
+                        </ul>
+                    </div>
+                    <!-- ESSENTIAL NUMBERS (Requested) -->
+                    <div class="mnemonic-card">
+                        <div class="mnemonic-title">Essential Numbers</div>
+                        <div class="mnemonic-body">
+                            <ul style="list-style: none; padding: 0;">
+                                <li><strong>1 Acre</strong> = 43,560 sq ft<br><span
+                                        style="color:#64748b; font-size:0.85em;">"4 elders driving 35 in a 60"</span>
+                                </li>
+                                <li style="margin-top:5px;"><strong>1 Mile</strong> = 5,280 ft<br><span
+                                        style="color:#64748b; font-size:0.85em;">"5 tomatoes" (5-2-8-0)</span></li>
+                                <li style="margin-top:5px;"><strong>1 Section</strong> = 640 Acres (1 sq mile)</li>
+                                <li style="margin-top:5px;"><strong>1 Township</strong> = 36 Sections</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- MATH FORMULAS (Requested) -->
+                    <div class="mnemonic-card">
+                        <div class="mnemonic-title">Math Formulas</div>
+                        <div class="mnemonic-body">
+                            <ul style="list-style: none; padding: 0;">
+                                <li><strong>T-Bar Method:</strong><br>Part / (Total × Rate)</li>
+                                <li style="margin-top:8px;"><strong>Cap Rate (IRV):</strong><br>Income / Value = Rate
+                                </li>
+                                <li style="margin-top:8px;"><strong>GRM:</strong><br>Price / Gross Monthly Rent</li>
+                                <li style="margin-top:8px;"><strong>Interest:</strong><br>Principal × Rate × Time</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- OWNERSHIP & DEEDS (Requested) -->
+                    <div class="mnemonic-card">
+                        <div class="mnemonic-title">Ownership & Deeds</div>
+                        <div class="mnemonic-body">
+                            <ul style="list-style: none; padding: 0;">
+                                <li><strong>Joint Tenancy:</strong><br>P-I-T-T + Right of Survivorship</li>
+                                <li style="margin-top:8px;"><strong>Tenancy in Common:</strong><br>Heirs inherit (No
+                                    survivorship)</li>
+                                <li style="margin-top:8px;"><strong>General Warranty:</strong><br>Best protection for
+                                    buyer</li>
+                                <li style="margin-top:8px;"><strong>Quitclaim:</strong><br>Least protection (clears
+                                    clouds)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- WATER RIGHTS (Requested) -->
+                    <div class="mnemonic-card">
+                        <div class="mnemonic-title">Water Rights</div>
+                        <div class="mnemonic-body">
+                            <ul style="list-style: none; padding: 0;">
+                                <li><strong>Riparian</strong> = Rivers<br><span
+                                        style="color:#64748b; font-size:0.85em;">"R" for River (Flowing)</span></li>
+                                <li style="margin-top:8px;"><strong>Littoral</strong> = Lakes<br><span
+                                        style="color:#64748b; font-size:0.85em;">"L" for Lake (Standing)</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- LAND CHARACTERISTICS (Requested) -->
+                    <div class="mnemonic-card">
+                        <div class="mnemonic-title">Land Characteristics</div>
+                        <div class="mnemonic-body">
+                            <p style="margin-bottom:5px;"><strong>Physical:</strong></p>
+                            <ul style="list-style: none; padding: 0; margin-bottom:10px;">
+                                <li>Immobility, Indestructibility, Uniqueness</li>
+                            </ul>
+                            <p style="margin-bottom:5px;"><strong>Economic:</strong></p>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>Scarcity, Improvements, Permanence, Situs (Location)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- LIEN PRIORITY (Requested) -->
+                    <div class="mnemonic-card">
+                        <div class="mnemonic-title">Lien Priority</div>
+                        <div class="mnemonic-body">
+                            <ol style="padding-left: 20px;">
+                                <li><strong>Property Taxes</strong> (Always #1)</li>
+                                <li><strong>Special Assessments</strong></li>
+                                <li><strong>Mortgages / Mechanics</strong><br><span
+                                        style="color:#64748b; font-size:0.85em;">(By date & time recorded)</span></li>
+                            </ol>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="questions.js"></script>
+    <script src="exam.js"></script>
+</body>
+
+</html>
