@@ -27,6 +27,18 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
+        /* Ensure Overlays are Hidden by Default */
+        .modal,
+        .shortcuts-help {
+            display: none;
+        }
+
+        /* When shown, they will be display: block via JS toggling classes or inline styles */
+        .modal.show,
+        .shortcuts-help.show {
+            display: block;
+        }
+
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-primary);
@@ -192,6 +204,27 @@
             font-size: 1rem;
             transition: all 0.2s;
             color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .option-letter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: var(--bg-tertiary);
+            border-radius: 50%;
+            font-weight: bold;
+            flex-shrink: 0;
+            color: var(--text-secondary);
+        }
+
+        .option.selected .option-letter {
+            background: var(--accent-blue);
+            color: white;
         }
 
         .option:hover {
