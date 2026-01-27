@@ -161,9 +161,9 @@ function populateCategoryGrid() {
     });
 
     grid.innerHTML = categories.map(cat => `
-                <label class="category-item selected" onclick="toggleCategory('${cat}')">
+                <label class="category-item" onclick="toggleCategory('${cat}')">
                     <input type="checkbox" value="${cat}" checked>
-                    ${cat} (${catCounts[cat] || 0})
+                    <span>${cat} <span style="color:var(--text-muted); font-size:0.8em;">(${catCounts[cat] || 0})</span></span>
                 </label>
             `).join('');
 
@@ -483,6 +483,7 @@ function displayQuestion() {
         if (!examState.isReviewMode && !(examState.studyMode && alreadyAnswered)) {
             div.onclick = () => selectAnswer(i);
         } else {
+            div.classList.add('disabled');
             div.style.cursor = 'default';
         }
         container.appendChild(div);
@@ -655,10 +656,32 @@ function showResults() {
 
     const percent = Math.round((correct / examState.questions.length) * 100);
     const passed = percent >= 75;
+    document.getElementById('scorePercent').className = 'score-percent';
+    document.getElementById('scoreText').className = 'score-fraction';
 
-    document.getElementById('scorePercent').textContent = `${percent}%`;
-    document.getElementById('scoreText').textContent = `${correct}/${examState.questions.length}`;
-    document.getElementById('scoreCircle').className = `score-circle ${passed ? 'pass' : 'fail'}`;
+    const circle = document.getElementById('scoreCircle');
+    circle.className = `score-circle ${passed ? 'pass' : 'fail'}`;
+    circle.style.setProperty('--percent', `${percent}deg`); // simple gradient handling
+    // Actually conic gradient uses degrees, 100% = 360deg.
+    circle.style.setProperty('--percent', `${percent * 3.6}deg`);
+
+    // Wrap content for z-index
+    const content = document.createElement('div');
+    content.className = 'score-content';
+    content.appendChild(document.getElementById('scorePercent'));
+    content.appendChild(document.getElementById('scoreText'));
+
+    // Clear circle and re-append content (to avoid dupes if re-run)
+    // But we have elements inside. Let's just structure it in HTML or check here.
+    // Simplest is to ensure HTML has the structure, or inject it here.
+    // Let's assume we fixed HTML or do it inline.
+    // Actually, let's just update the innerHTML comfortably.
+    circle.innerHTML = `
+                <div class="score-content">
+                    <div class="score-percent">${percent}%</div>
+                    <div class="score-fraction">${correct}/${examState.questions.length}</div>
+                </div>
+            `;
     document.getElementById('passFailText').textContent = passed ? '🎉 PASSED!' : '❌ Not Passed';
     document.getElementById('passFailText').style.color = passed ? '#10b981' : '#ef4444';
 
