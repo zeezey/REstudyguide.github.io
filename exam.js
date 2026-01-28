@@ -744,17 +744,19 @@ function displayScoreHistory() {
         const date = new Date(entry.date);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        const passClass = entry.passed ? 'pass' : 'fail';
-        const passIcon = entry.passed ? '✓' : '✗';
+        const passClass = entry.percent >= 75 ? 'pass' : 'fail';
+        const passIcon = entry.percent >= 75 ? '✓' : '✗';
         return `
-                    <div class="score-entry">
-                        <div>
-                            <span class="date">${dateStr} ${timeStr}</span>
-                            <span class="mode">${entry.mode}</span>
-                        </div>
-                        <span class="score ${passClass}">${passIcon} ${entry.percent}%</span>
-                    </div>
-                `;
+            <div class="score-entry">
+                <div>
+                    <span class="date">${dateStr} ${timeStr}</span>
+                    <span class="mode">${entry.mode}</span>
+                </div>
+                <div class="score ${passClass}">
+                    ${passIcon} ${entry.percent}%
+                </div>
+            </div>
+        `;
     }).join('');
 }
 

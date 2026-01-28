@@ -964,3 +964,112 @@ h4 {
         max-height: 250px;
     }
 }
+
+/* ===========================
+   PREVIOUS SCORES LOG
+   =========================== */
+.scores-log {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.scores-log h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#scoresContainer {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-right: 5px;
+}
+
+.score-entry {
+    background: var(--bg-app);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.score-entry:hover {
+    border-color: var(--primary-500);
+    transform: translateX(2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.score-entry .date {
+    display: block;
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.score-entry .mode {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: var(--slate-200);
+    color: var(--slate-700);
+    margin-top: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .score-entry .mode {
+    background: var(--slate-700);
+    color: var(--slate-300);
+}
+
+.score-entry .score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    min-width: 100px;
+    text-align: center;
+}
+
+.score-entry .score.pass {
+    background: var(--correct-bg);
+    color: var(--correct-text);
+    border: 1px solid var(--correct-border);
+}
+
+.score-entry .score.fail {
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+    border: 1px solid var(--incorrect-border);
+}
+
+.clear-btn {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.clear-btn:hover {
+    color: var(--red-500);
+}
+
+.no-scores {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 1rem;
+}
