@@ -36,11 +36,13 @@ function check(btn, isCorrect) {
         btn.classList.add('correct');
         btn.innerHTML += " ✅";
         correctAnswers++;
+        updateStudyStats('correct');
     } else {
         btn.classList.add('wrong');
         btn.innerHTML += " ❌";
     }
     totalAnswered++;
+    updateStudyStats('answer');
     updateQuizScore();
 }
 
@@ -203,30 +205,35 @@ function performSearch(query) {
     clearSearch();
     const mainContent = document.querySelector('.main-content');
     const walker = document.createTreeWalker(mainContent, NodeFilter.SHOW_TEXT, null, false);
-    let firstMatch = null;
-    const matches = [];
+    const queryLower = query.toLowerCase();
 
+    // Snapshot matching text nodes first, then mutate — avoids walker descending into
+    // newly-inserted highlight spans and re-matching the same text.
+    const targets = [];
     while (walker.nextNode()) {
         const node = walker.currentNode;
-        const text = node.textContent;
-        const lowerText = text.toLowerCase();
-
-        if (lowerText.includes(query) && node.parentElement.tagName !== 'SCRIPT' && node.parentElement.tagName !== 'STYLE') {
-            const parent = node.parentElement;
-            const regex = new RegExp(`(${query})`, 'gi');
-            const newHtml = text.replace(regex, '<span class="search-highlight">$1</span>');
-
-            const span = document.createElement('span');
-            span.innerHTML = newHtml;
-            span.classList.add('search-result-container');
-            parent.replaceChild(span, node);
-
-            if (!firstMatch) {
-                firstMatch = span.querySelector('.search-highlight');
-            }
-            matches.push(span);
+        const parent = node.parentElement;
+        if (!parent) continue;
+        if (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') continue;
+        if (parent.classList && (parent.classList.contains('search-highlight') || parent.classList.contains('search-result-container'))) continue;
+        if (node.textContent.toLowerCase().includes(queryLower)) {
+            targets.push(node);
         }
     }
+
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    let firstMatch = null;
+
+    targets.forEach(node => {
+        const parent = node.parentElement;
+        if (!parent) return;
+        const span = document.createElement('span');
+        span.classList.add('search-result-container');
+        span.innerHTML = node.textContent.replace(regex, '<span class="search-highlight">$1</span>');
+        parent.replaceChild(span, node);
+        if (!firstMatch) firstMatch = span.querySelector('.search-highlight');
+    });
 
     if (firstMatch) {
         firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -248,10 +255,12 @@ function clearSearch() {
 }
 
 // ===== PROGRESS TRACKING =====
-const sectionIds = ['mnemonics', 'water', 'subdivision', 'azlaw', 'property', 'estates', 'leases', 'govt',
-    'agency', 'communication', 'contracts', 'valuation', 'financing', 'deeds', 'title',
-    'legaldesc', 'liens', 'closing', 'fairhousing', 'environmental', 'riskmanagement',
-    'keydates', 'examtips', 'quiz', 'math'];
+// Derive section IDs from the DOM so the progress total matches what's actually
+// on the page (the previous hardcoded list missed 8 sections, letting the bar
+// exceed 100% if a user checked any of them off).
+function getSectionIds() {
+    return Array.from(document.querySelectorAll('section[id]')).map(s => s.id);
+}
 
 // ===== MOBILE SIDEBAR =====
 function toggleMobileSidebar() {
@@ -303,8 +312,10 @@ function toggleSectionProgress(sectionId, element) {
 
 function updateOverallProgress() {
     const progress = JSON.parse(localStorage.getItem('studyProgress') || '{}');
-    const completed = Object.values(progress).filter(v => v).length;
-    const total = sectionIds.length;
+    const ids = getSectionIds();
+    // Only count progress for sections that still exist on the page.
+    const completed = ids.filter(id => progress[id]).length;
+    const total = Math.max(ids.length, 1);
     const percent = Math.round((completed / total) * 100);
 
     document.getElementById('overallProgress').style.width = percent + '%';
@@ -371,7 +382,12 @@ function updateBreadcrumb(sectionId) {
         }
     }
 
-    const sectionText = h2.childNodes[0].textContent.trim();
+    let sectionText = '';
+    h2.childNodes.forEach(n => {
+        if (n.nodeType === Node.TEXT_NODE) sectionText += n.textContent;
+    });
+    sectionText = sectionText.trim();
+    if (!sectionText) sectionText = h2.textContent.replace(/[★☆✓]/g, '').trim();
     breadcrumb.innerHTML = `📍 Currently viewing: <strong>${sectionText}</strong>`;
 }
 
@@ -420,8 +436,13 @@ function shuffleQuestions() {
     questions.forEach((group, idx) => {
         group.forEach((node, nodeIdx) => {
             if (nodeIdx === 0) {
-                // Update question number
-                node.innerHTML = node.innerHTML.replace(/^\d+\./, `${idx + 1}.`);
+                // Renumber by editing only the leading text node so we don't
+                // re-parse the question's HTML (which would strip the flag
+                // button's JS-attached onclick handler).
+                const first = node.childNodes[0];
+                if (first && first.nodeType === Node.TEXT_NODE) {
+                    first.textContent = first.textContent.replace(/^\s*\d+\./, `${idx + 1}.`);
+                }
             }
             container.appendChild(node);
         });
@@ -465,18 +486,40 @@ function toggleTimer() {
 }
 
 // ===== WEAK AREAS TRACKING =====
+// Keyed by question text (stable across shuffles) instead of DOM index.
 let weakAreas = JSON.parse(localStorage.getItem('weakAreas') || '[]');
+// Migrate older numeric-index data — drop entries that aren't strings.
+weakAreas = weakAreas.filter(k => typeof k === 'string');
+
+function questionKey(q) {
+    return (q.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
+function optionKey(btn) {
+    return (btn.textContent || '').replace(/\s*[✅❌]\s*$/, '').replace(/\s+/g, ' ').trim();
+}
+
+function siblingOptionsOf(qEl) {
+    const opts = [];
+    let sib = qEl.nextElementSibling;
+    while (sib && !sib.classList.contains('question')) {
+        if (sib.classList.contains('option')) opts.push(sib);
+        sib = sib.nextElementSibling;
+    }
+    return opts;
+}
 
 function addFlagButtons() {
-    document.querySelectorAll('.question').forEach((q, idx) => {
+    document.querySelectorAll('.question').forEach(q => {
         if (!q.querySelector('.flag-btn')) {
+            const key = questionKey(q);
             const flagBtn = document.createElement('button');
             flagBtn.className = 'flag-btn';
-            flagBtn.innerHTML = weakAreas.includes(idx) ? '🚩' : '⚪';
+            flagBtn.innerHTML = weakAreas.includes(key) ? '🚩' : '⚪';
             flagBtn.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 1.2rem; margin-left: 10px;';
             flagBtn.onclick = (e) => {
                 e.stopPropagation();
-                toggleWeakArea(idx, flagBtn);
+                toggleWeakArea(key, flagBtn);
             };
             q.appendChild(flagBtn);
         }
@@ -484,12 +527,12 @@ function addFlagButtons() {
     updateWeakCount();
 }
 
-function toggleWeakArea(idx, btn) {
-    if (weakAreas.includes(idx)) {
-        weakAreas = weakAreas.filter(i => i !== idx);
+function toggleWeakArea(key, btn) {
+    if (weakAreas.includes(key)) {
+        weakAreas = weakAreas.filter(k => k !== key);
         btn.innerHTML = '⚪';
     } else {
-        weakAreas.push(idx);
+        weakAreas.push(key);
         btn.innerHTML = '🚩';
     }
     localStorage.setItem('weakAreas', JSON.stringify(weakAreas));
@@ -506,19 +549,19 @@ function showWeakAreas() {
         return;
     }
 
-    const questions = document.querySelectorAll('.question');
-    questions.forEach((q, idx) => {
-        const parent = q.parentElement;
-        if (weakAreas.includes(idx)) {
+    let firstFlagged = null;
+    document.querySelectorAll('.question').forEach(q => {
+        if (weakAreas.includes(questionKey(q))) {
             q.style.border = '3px solid #ef4444';
             q.style.borderRadius = '8px';
             q.style.padding = '10px';
-            q.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (!firstFlagged) firstFlagged = q;
         } else {
             q.style.border = '';
             q.style.padding = '';
         }
     });
+    if (firstFlagged) firstFlagged.scrollIntoView({ behavior: 'smooth', block: 'center' });
     alert(`Showing ${weakAreas.length} flagged weak area(s). Scroll to see highlighted questions.`);
 }
 
@@ -577,9 +620,11 @@ document.addEventListener('keydown', function (e) {
             e.preventDefault();
             break;
         case 'r':
-        case 'R':
-            shuffleQuestions();
+        case 'R': {
+            const quiz = document.getElementById('quizContainer');
+            if (quiz) shuffleQuestions();
             break;
+        }
         case 'Escape':
             clearSearch();
             break;
@@ -600,13 +645,15 @@ Double-click any text to hear it spoken!`);
 }
 
 // ===== STUDY STATISTICS =====
+// Each action increments its own counter — never overwrites with a session
+// value (that wiped saved totals back to 0 on every page load).
 function updateStudyStats(action) {
     const stats = JSON.parse(localStorage.getItem('studyStats') || '{}');
     stats.lastVisit = new Date().toISOString();
-    stats.totalVisits = (stats.totalVisits || 0) + (action === 'visit' ? 1 : 0);
-    stats.questionsAnswered = totalAnswered || 0;
-    stats.correctAnswers = correctAnswers || 0;
-    stats.shuffleCount = (stats.shuffleCount || 0) + (action === 'shuffle' ? 1 : 0);
+    if (action === 'visit')   stats.totalVisits       = (stats.totalVisits       || 0) + 1;
+    if (action === 'shuffle') stats.shuffleCount      = (stats.shuffleCount      || 0) + 1;
+    if (action === 'answer')  stats.questionsAnswered = (stats.questionsAnswered || 0) + 1;
+    if (action === 'correct') stats.correctAnswers    = (stats.correctAnswers    || 0) + 1;
     localStorage.setItem('studyStats', JSON.stringify(stats));
 }
 
@@ -635,17 +682,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ===== SAVE & LOAD QUIZ PROGRESS =====
 function saveQuizProgress() {
-    const answeredQuestions = [];
-    document.querySelectorAll('.option').forEach((btn, idx) => {
-        if (btn.classList.contains('correct')) {
-            answeredQuestions.push({ idx, state: 'correct' });
-        } else if (btn.classList.contains('wrong')) {
-            answeredQuestions.push({ idx, state: 'wrong' });
-        }
+    // Save answers keyed by (question text, option text) so the data survives shuffles.
+    const answers = [];
+    document.querySelectorAll('.question').forEach(q => {
+        const qKey = questionKey(q);
+        siblingOptionsOf(q).forEach(btn => {
+            if (btn.classList.contains('correct')) {
+                answers.push({ qKey, optKey: optionKey(btn), state: 'correct' });
+            } else if (btn.classList.contains('wrong')) {
+                answers.push({ qKey, optKey: optionKey(btn), state: 'wrong' });
+            }
+        });
     });
 
     const progress = {
-        answeredQuestions,
+        version: 2,
+        answers,
         correctAnswers,
         totalAnswered,
         timerSeconds,
@@ -677,21 +729,39 @@ function loadQuizProgress() {
         return;
     }
 
-    // Restore answers
-    const allOptions = document.querySelectorAll('.option');
-    progress.answeredQuestions.forEach(q => {
-        const btn = allOptions[q.idx];
-        if (btn) {
-            btn.classList.add(q.state);
-            btn.innerHTML += q.state === 'correct' ? ' ✅' : ' ❌';
-        }
-    });
+    // Restore answers — match by question + option text so it works after shuffling.
+    if (progress.version >= 2 && Array.isArray(progress.answers)) {
+        const lookup = new Map();
+        document.querySelectorAll('.question').forEach(q => {
+            const qKey = questionKey(q);
+            siblingOptionsOf(q).forEach(btn => {
+                lookup.set(qKey + '' + optionKey(btn), btn);
+            });
+        });
+        progress.answers.forEach(a => {
+            const btn = lookup.get(a.qKey + '' + a.optKey);
+            if (btn) {
+                btn.classList.add(a.state);
+                btn.innerHTML += a.state === 'correct' ? ' ✅' : ' ❌';
+            }
+        });
+    } else if (Array.isArray(progress.answeredQuestions)) {
+        // Legacy v1 fallback — index-based, only correct if questions haven't been shuffled.
+        const allOptions = document.querySelectorAll('.option');
+        progress.answeredQuestions.forEach(a => {
+            const btn = allOptions[a.idx];
+            if (btn) {
+                btn.classList.add(a.state);
+                btn.innerHTML += a.state === 'correct' ? ' ✅' : ' ❌';
+            }
+        });
+    }
 
     // Restore scores
     correctAnswers = progress.correctAnswers;
     totalAnswered = progress.totalAnswered;
     timerSeconds = progress.timerSeconds;
-    weakAreas = progress.weakAreas || [];
+    weakAreas = (progress.weakAreas || []).filter(k => typeof k === 'string');
 
     // Update UI
     updateQuizScore();

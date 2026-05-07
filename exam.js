@@ -8,14 +8,69 @@ let settings = {
     theme: 'light'
 };
 
+// Map the 60+ raw category strings in the question bank to a smaller, canonical set
+// so the filter UI is usable. Anything not listed falls through to its base name.
+const CATEGORY_NORMALIZATION = {
+    'Agency Relationships': 'Agency',
+    'Property Interests': 'Property',
+    'Property Rights': 'Property',
+    'Acquisitions': 'Property',
+    'Encumbrances': 'Property',
+    'Property Insurance': 'Property',
+    'Rights': 'Property',
+    'Finance': 'Financing',
+    'Financing Concepts': 'Financing',
+    'Financing Documents': 'Financing',
+    'Foreclosure': 'Financing',
+    'Disclosures': 'Disclosure',
+    'Government Powers': 'Government',
+    'Government Rights': 'Government',
+    'Environment': 'Environmental',
+    'Environmental Law': 'Environmental',
+    'Lease': 'Leases',
+    'Landlord Tenant Act': 'Leases',
+    'ARLTA': 'Leases',
+    'Tax': 'Taxes',
+    'Income Tax': 'Taxes',
+    'Land Descriptions': 'Legal Descriptions',
+    'Water Law': 'Water Rights',
+    'Zoning vs CC&Rs': 'Zoning',
+    'Land Use': 'Zoning',
+    'Land Development': 'Zoning',
+    'Subdivision': 'Zoning',
+    'Real Estate Statutes': 'Real Estate Law',
+    'Federal Laws': 'Real Estate Law',
+    'Laws': 'Real Estate Law',
+    'Regulations': 'Real Estate Law',
+    'Arizona Law': 'Arizona',
+    "Commissioner's Rules": 'Arizona',
+    'Cooperative Nature': 'Brokerage',
+    'Brokerage Management': 'Brokerage',
+    'Antitrust': 'Brokerage',
+    'Trust Accounts': 'Brokerage',
+    'Escrow': 'Brokerage',
+    'Transfer of Title': 'Transfer',
+    'Title': 'Transfer',
+    'Deeds': 'Transfer'
+};
+
+function normalizeCategory(rawCat) {
+    const base = (rawCat || '').split(' / ')[0].trim();
+    return CATEGORY_NORMALIZATION[base] || base;
+}
+
+// Minimal HTML-entity escaper for safely interpolating arbitrary strings
+// into innerHTML (category labels, question/option text from the bank).
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 // Get all unique categories from question bank
 function getCategories() {
     const cats = new Set();
-    questionBank.forEach(q => {
-        // Get base category (before /)
-        const baseCat = q.cat.split(' / ')[0];
-        cats.add(baseCat);
-    });
+    questionBank.forEach(q => cats.add(normalizeCategory(q.cat)));
     return Array.from(cats).sort();
 }
 
@@ -94,13 +149,18 @@ function recordQuestionPerformance(questionId, correct) {
 }
 
 // Theme toggle
+function setThemeToggleLabel(theme) {
+    const label = document.querySelector('.theme-toggle .tt-label');
+    if (label) label.textContent = theme === 'dark' ? 'Dawn' : 'Dusk';
+}
+
 function toggleTheme() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', newTheme);
     localStorage.setItem('azTheme', newTheme);
-    document.querySelector('.theme-toggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    setThemeToggleLabel(newTheme);
 }
 
 // Quiz length selection
@@ -153,19 +213,30 @@ function populateCategoryGrid() {
     const grid = document.getElementById('categoryGrid');
     const categories = getCategories();
 
-    // Count questions per category
+    // Count questions per category (normalized)
     const catCounts = {};
     questionBank.forEach(q => {
-        const baseCat = q.cat.split(' / ')[0];
-        catCounts[baseCat] = (catCounts[baseCat] || 0) + 1;
+        const c = normalizeCategory(q.cat);
+        catCounts[c] = (catCounts[c] || 0) + 1;
     });
 
-    grid.innerHTML = categories.map(cat => `
-                <label class="category-item" onclick="toggleCategory('${cat}')">
-                    <input type="checkbox" value="${cat}" checked>
-                    <span>${cat} <span style="color:var(--text-muted); font-size:0.8em;">(${catCounts[cat] || 0})</span></span>
-                </label>
-            `).join('');
+    grid.innerHTML = categories.map(cat => {
+        const safe = escapeHtml(cat);
+        const count = catCounts[cat] || 0;
+        return `
+            <label class="category-item" data-cat="${safe}">
+                <input type="checkbox" value="${safe}" checked>
+                <span>${safe} <span style="color:var(--text-muted); font-size:0.8em;">(${count})</span></span>
+            </label>
+        `;
+    }).join('');
+
+    // Delegated click handler — replaces the inline onclick interpolation,
+    // so category strings can never break out of an attribute.
+    grid.onclick = e => {
+        const label = e.target.closest('.category-item');
+        if (label && label.dataset.cat) toggleCategory(label.dataset.cat);
+    };
 
     // Select all by default
     selectAllCategories();
@@ -173,14 +244,14 @@ function populateCategoryGrid() {
 
 // Update stats dashboard
 function updateStatsDashboard() {
-    const history = JSON.parse(localStorage.getItem('azExamHistory') || '[]');
+    const history = JSON.parse(localStorage.getItem('azExamScoreHistory') || '[]');
     const missed = getMissedQuestions();
     const bookmarks = getBookmarkedQuestions();
 
     document.getElementById('totalExams').textContent = history.length;
 
     if (history.length > 0) {
-        const avgScore = Math.round(history.reduce((sum, h) => sum + h.percentage, 0) / history.length);
+        const avgScore = Math.round(history.reduce((sum, h) => sum + h.percent, 0) / history.length);
         document.getElementById('avgScore').textContent = avgScore + '%';
     } else {
         document.getElementById('avgScore').textContent = '0%';
@@ -201,7 +272,7 @@ window.onload = function () {
     // Restore theme
     const savedTheme = localStorage.getItem('azTheme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    document.querySelector('.theme-toggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    setThemeToggleLabel(savedTheme);
 
     // Populate categories
     populateCategoryGrid();
@@ -227,10 +298,7 @@ window.onload = function () {
 
 // Get filtered questions based on settings
 function getFilteredQuestions() {
-    let filtered = questionBank.filter(q => {
-        const baseCat = q.cat.split(' / ')[0];
-        return settings.selectedCategories.has(baseCat);
-    });
+    let filtered = questionBank.filter(q => settings.selectedCategories.has(normalizeCategory(q.cat)));
 
     // Apply weighted random if enabled
     if (document.getElementById('weightedRandom').checked) {
@@ -257,23 +325,22 @@ function getFilteredQuestions() {
 function prepareQuestions(questions) {
     const shuffleOpts = document.getElementById('shuffleAnswers').checked;
 
-    return questions.map((q, qIndex) => {
+    return questions.map((q) => {
         if (shuffleOpts) {
-            // Create shuffled options with original index mapping
             const optionsWithIndex = q.opts.map((opt, i) => ({ opt, originalIndex: i }));
             const shuffledOptions = shuffleArray([...optionsWithIndex]);
-
-            // Find new correct answer index
-            const newAnsIndex = shuffledOptions.findIndex(o => o.originalIndex === q.ans);
+            const order = shuffledOptions.map(o => o.originalIndex);
+            const newAnsIndex = order.indexOf(q.ans);
 
             return {
                 ...q,
                 opts: shuffledOptions.map(o => o.opt),
                 ans: newAnsIndex,
-                _originalAns: q.ans  // Keep original for reference
+                _originalAns: q.ans,
+                _optsOrder: order
             };
         }
-        return { ...q };
+        return { ...q, _optsOrder: q.opts.map((_, i) => i) };
     });
 }
 
@@ -381,12 +448,50 @@ function startBookmarkedMode() {
 }
 
 
-// Resume saved exam
+// Resume saved exam — supports both v2 (slim, IDs only) and legacy (full questions) saves.
 function resumeExam() {
     const saved = JSON.parse(localStorage.getItem('azExamProgress'));
+    if (!saved) return;
+
+    let questions;
+    if (saved.questionRefs) {
+        // v2 slim: rebuild questions from IDs + option ordering.
+        const byId = {};
+        questionBank.forEach(q => { byId[q.id] = q; });
+        questions = saved.questionRefs.map(ref => {
+            const orig = byId[ref.id];
+            if (!orig) return null;
+            const order = (ref.order && ref.order.length === orig.opts.length) ? ref.order : orig.opts.map((_, i) => i);
+            const opts = order.map(i => orig.opts[i]);
+            const ans = order.indexOf(orig.ans);
+            return { ...orig, opts, ans, _originalAns: orig.ans, _optsOrder: order };
+        }).filter(Boolean);
+    } else if (Array.isArray(saved.questions)) {
+        // Legacy: full question objects were saved.
+        questions = saved.questions;
+    } else {
+        return;
+    }
+
+    if (questions.length === 0) {
+        localStorage.removeItem('azExamProgress');
+        return;
+    }
+
+    // Clamp currentIndex in case the underlying question bank changed and some
+    // saved questions could not be rehydrated.
+    const savedIdx = Number.isInteger(saved.currentIndex) ? saved.currentIndex : 0;
+    const currentIndex = Math.max(0, Math.min(savedIdx, questions.length - 1));
+
     examState = {
-        ...saved,
-        flagged: new Set(saved.flagged)
+        questions,
+        currentIndex,
+        answers: saved.answers || {},
+        flagged: new Set(saved.flagged || []),
+        timeRemaining: saved.timeRemaining != null ? saved.timeRemaining : (5 * 60 * 60),
+        isReviewMode: saved.isReviewMode || false,
+        studyMode: saved.studyMode || false,
+        submitted: saved.submitted || false
     };
     showExamScreen();
 }
@@ -396,6 +501,11 @@ function showExamScreen() {
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('resultsScreen').classList.add('hidden');
     document.getElementById('examScreen').classList.remove('hidden');
+    // Restore controls that review mode hides — otherwise a new exam after
+    // a review session has no Mark-for-review or Submit button.
+    document.getElementById('flagBtn').style.display = '';
+    document.getElementById('submitBtn').style.display = '';
+    document.getElementById('timer').classList.remove('review');
     buildNavGrid();
     displayQuestion();
     startTimer();
@@ -462,7 +572,7 @@ function updateNavGrid() {
 function displayQuestion() {
     const q = examState.questions[examState.currentIndex];
     document.getElementById('questionNumber').textContent = `Question ${examState.currentIndex + 1} of ${examState.questions.length}`;
-    document.getElementById('categoryTag').textContent = q.cat;
+    document.getElementById('categoryTag').textContent = normalizeCategory(q.cat);
     document.getElementById('questionText').textContent = q.q;
 
     const container = document.getElementById('optionsContainer');
@@ -479,7 +589,15 @@ function displayQuestion() {
             if (i === q.ans) div.classList.add('correct');
             else if (examState.answers[examState.currentIndex] === i) div.classList.add('incorrect');
         }
-        div.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+        // Build children with textContent so option text is never parsed as HTML.
+        const letterSpan = document.createElement('span');
+        letterSpan.className = 'option-letter';
+        letterSpan.textContent = letters[i];
+        const textSpan = document.createElement('span');
+        textSpan.textContent = opt;
+        div.appendChild(letterSpan);
+        div.appendChild(textSpan);
+
         if (!examState.isReviewMode && !(examState.studyMode && alreadyAnswered)) {
             div.onclick = () => selectAnswer(i);
         } else {
@@ -513,9 +631,12 @@ function displayQuestion() {
 // Select answer
 function selectAnswer(index) {
     const alreadyAnswered = examState.answers[examState.currentIndex] !== undefined;
+    // Study-mode answers are locked once given (the click handler is removed,
+    // but the keyboard shortcut would otherwise overwrite the saved choice).
+    if (examState.studyMode && alreadyAnswered) return;
+
     examState.answers[examState.currentIndex] = index;
 
-    // In study mode, show feedback immediately
     if (examState.studyMode && !alreadyAnswered) {
         showStudyFeedback();
     } else {
@@ -586,7 +707,10 @@ function startTimer() {
     timerInterval = setInterval(() => {
         if (examState.timeRemaining <= 0 || examState.submitted) {
             clearInterval(timerInterval);
-            if (!examState.submitted) submitExam();
+            if (!examState.submitted) {
+                alert("⏰ Time's up — submitting your exam.");
+                forceSubmitExam();
+            }
             return;
         }
         examState.timeRemaining--;
@@ -608,18 +732,33 @@ function updateTimerDisplay() {
     if (examState.timeRemaining <= 300) timerEl.classList.add('danger');
 }
 
-// Save progress
+// Save progress — slim payload: question IDs + option ordering, not full text.
 function saveProgress() {
-    const toSave = {
-        ...examState,
-        flagged: [...examState.flagged]
+    if (!examState.questions || examState.questions.length === 0) return;
+    const slim = {
+        version: 2,
+        currentIndex: examState.currentIndex,
+        answers: examState.answers,
+        flagged: [...examState.flagged],
+        timeRemaining: examState.timeRemaining,
+        isReviewMode: examState.isReviewMode,
+        studyMode: examState.studyMode,
+        submitted: examState.submitted,
+        questionRefs: examState.questions.map(q => ({
+            id: q.id,
+            order: q._optsOrder || q.opts.map((_, i) => i)
+        }))
     };
-    localStorage.setItem('azExamProgress', JSON.stringify(toSave));
+    localStorage.setItem('azExamProgress', JSON.stringify(slim));
 }
 
 // Submit exam
 function submitExam() {
     if (!confirm('Are you sure you want to submit? You cannot change answers after submitting.')) return;
+    forceSubmitExam();
+}
+
+function forceSubmitExam() {
     examState.submitted = true;
     clearInterval(timerInterval);
     localStorage.removeItem('azExamProgress');
@@ -635,14 +774,15 @@ function showResults() {
     const catScores = {};
 
     examState.questions.forEach((q, i) => {
-        if (!catScores[q.cat]) catScores[q.cat] = { correct: 0, total: 0 };
-        catScores[q.cat].total++;
+        const cat = normalizeCategory(q.cat);
+        if (!catScores[cat]) catScores[cat] = { correct: 0, total: 0 };
+        catScores[cat].total++;
 
         const isCorrect = examState.answers[i] === q.ans;
 
         if (isCorrect) {
             correct++;
-            catScores[q.cat].correct++;
+            catScores[cat].correct++;
             // Remove from missed if answered correctly
             removeMissedQuestion(q.id);
         } else {
@@ -656,34 +796,21 @@ function showResults() {
 
     const percent = Math.round((correct / examState.questions.length) * 100);
     const passed = percent >= 75;
-    document.getElementById('scorePercent').className = 'score-percent';
-    document.getElementById('scoreText').className = 'score-fraction';
 
     const circle = document.getElementById('scoreCircle');
     circle.className = `score-circle ${passed ? 'pass' : 'fail'}`;
-    circle.style.setProperty('--percent', `${percent}deg`); // simple gradient handling
-    // Actually conic gradient uses degrees, 100% = 360deg.
-    circle.style.setProperty('--percent', `${percent * 3.6}deg`);
-
-    // Wrap content for z-index
-    const content = document.createElement('div');
-    content.className = 'score-content';
-    content.appendChild(document.getElementById('scorePercent'));
-    content.appendChild(document.getElementById('scoreText'));
-
-    // Clear circle and re-append content (to avoid dupes if re-run)
-    // But we have elements inside. Let's just structure it in HTML or check here.
-    // Simplest is to ensure HTML has the structure, or inject it here.
-    // Let's assume we fixed HTML or do it inline.
-    // Actually, let's just update the innerHTML comfortably.
     circle.innerHTML = `
-                <div class="score-content">
-                    <div class="score-percent">${percent}%</div>
-                    <div class="score-fraction">${correct}/${examState.questions.length}</div>
-                </div>
-            `;
-    document.getElementById('passFailText').textContent = passed ? '🎉 PASSED!' : '❌ Not Passed';
-    document.getElementById('passFailText').style.color = passed ? '#10b981' : '#ef4444';
+        <div class="score-content">
+            <div class="score-percent">${percent}<span class="score-mark">%</span></div>
+            <div class="score-fraction">${correct} / ${examState.questions.length} correct</div>
+        </div>
+    `;
+
+    const passFail = document.getElementById('passFailText');
+    passFail.innerHTML = passed
+        ? '<em>Passed.</em> A worthy showing.'
+        : '<em>Not yet.</em> Review and try again.';
+    passFail.className = passed ? 'pass-fail passed' : 'pass-fail failed';
 
     // Category breakdown
     const catDiv = document.getElementById('categoryScores');
@@ -706,9 +833,11 @@ function reviewExam() {
     examState.currentIndex = 0;
     document.getElementById('resultsScreen').classList.add('hidden');
     document.getElementById('examScreen').classList.remove('hidden');
-    document.getElementById('timer').textContent = 'Review Mode';
+    const timerEl = document.getElementById('timer');
+    timerEl.textContent = 'Review';
+    timerEl.classList.add('review');
     document.getElementById('flagBtn').style.display = 'none';
-    document.querySelector('.btn-success').style.display = 'none';
+    document.getElementById('submitBtn').style.display = 'none';
     displayQuestion();
 }
 
@@ -861,11 +990,12 @@ function exportResults() {
     const catScores = {};
 
     examState.questions.forEach((q, i) => {
-        if (!catScores[q.cat]) catScores[q.cat] = { correct: 0, total: 0 };
-        catScores[q.cat].total++;
+        const cat = normalizeCategory(q.cat);
+        if (!catScores[cat]) catScores[cat] = { correct: 0, total: 0 };
+        catScores[cat].total++;
         if (examState.answers[i] === q.ans) {
             correct++;
-            catScores[q.cat].correct++;
+            catScores[cat].correct++;
         }
     });
 
@@ -895,19 +1025,19 @@ function exportResults() {
                     
                     <h2>Score by Category</h2>
                     ${Object.entries(catScores).sort().map(([cat, scores]) =>
-        `<div class="category"><span>${cat}</span><span>${scores.correct}/${scores.total} (${Math.round(scores.correct / scores.total * 100)}%)</span></div>`
+        `<div class="category"><span>${escapeHtml(cat)}</span><span>${scores.correct}/${scores.total} (${Math.round(scores.correct / scores.total * 100)}%)</span></div>`
     ).join('')}
-                    
+
                     <h2>Question Details</h2>
                     ${examState.questions.map((q, i) => {
         const userAns = examState.answers[i];
         const isCorrect = userAns === q.ans;
         return `
                             <div class="question ${isCorrect ? 'correct' : 'incorrect'}">
-                                <strong>Q${i + 1}:</strong> ${q.q}<br>
-                                <strong>Your Answer:</strong> ${userAns !== undefined ? q.opts[userAns] : 'Not answered'}<br>
-                                <strong>Correct Answer:</strong> ${q.opts[q.ans]}<br>
-                                <div class="explanation">${q.exp}</div>
+                                <strong>Q${i + 1}:</strong> ${escapeHtml(q.q)}<br>
+                                <strong>Your Answer:</strong> ${userAns !== undefined ? escapeHtml(q.opts[userAns]) : 'Not answered'}<br>
+                                <strong>Correct Answer:</strong> ${escapeHtml(q.opts[q.ans])}<br>
+                                <div class="explanation">${escapeHtml(q.exp)}</div>
                             </div>
                         `;
     }).join('')}
@@ -934,9 +1064,9 @@ function closeCheatSheet() {
 }
 
 // Close modal when clicking outside
-window.onclick = function (event) {
+window.addEventListener('click', function (event) {
     const modal = document.getElementById('cheatSheetModal');
-    if (event.target == modal) {
+    if (event.target === modal) {
         modal.style.display = 'none';
     }
-}
+});

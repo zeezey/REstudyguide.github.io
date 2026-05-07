@@ -5,13 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arizona Real Estate Exam Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,30..100;1,9..144,300..700,30..100&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="exam.css">
 
 </head>
 
 <body>
     <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">🌙</button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"><span class="tt-dot"></span><span class="tt-label">Dusk</span></button>
 
     <!-- Keyboard Shortcuts Help -->
     <div class="shortcuts-help" id="shortcutsHelp">
@@ -27,36 +32,40 @@
     <div class="container">
         <!-- Start Screen -->
         <div id="startScreen" class="start-screen">
-            <h1>🌵 Arizona Real Estate Exam Simulator</h1>
-            <p>1,660+ questions covering all exam topics. Customize your practice session below.</p>
+            <div class="masthead">
+                <span class="masthead-meta">Vol. VII · Sonoran Edition · 1,500 questions</span>
+                <span class="masthead-glyph">✦</span>
+            </div>
+            <h1 class="display-headline"><em>The</em> Arizona <span class="display-amp">&amp;</span> Real Estate Examination</h1>
+            <p class="lede">A field study in licensure. Customize your session below — questions, categories, pacing.</p>
 
             <!-- Stats Dashboard -->
             <div class="stats-dashboard" id="statsDashboard">
                 <div class="stat-card">
                     <div class="stat-value" id="totalExams">0</div>
-                    <div class="stat-label">📝 Exams Taken</div>
+                    <div class="stat-label">Exams Taken</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="avgScore">0%</div>
-                    <div class="stat-label">📈 Avg Score</div>
+                    <div class="stat-label">Avg. Score</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="missedCount">0</div>
-                    <div class="stat-label">🎯 Missed Qs</div>
+                    <div class="stat-label">Missed</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="bookmarkCount">0</div>
-                    <div class="stat-label">⭐ Bookmarked</div>
+                    <div class="stat-label">Bookmarked</div>
                 </div>
             </div>
 
             <!-- Settings Panel -->
             <div class="settings-panel">
-                <h3>⚙️ Quiz Settings</h3>
+                <h3><span class="section-mark">§ I.</span> <em>Configuration</em></h3>
 
                 <!-- Quiz Length -->
                 <div class="settings-section">
-                    <label>Number of Questions:</label>
+                    <label>Length</label>
                     <div class="quiz-length-options">
                         <button class="quiz-length-btn" onclick="selectQuizLength(20)">20</button>
                         <button class="quiz-length-btn" onclick="selectQuizLength(50)">50</button>
@@ -67,12 +76,11 @@
 
                 <!-- Category Filter -->
                 <div class="settings-section">
-                    <label>Categories: <span id="categoryCount">(All selected)</span></label>
-                    <div style="margin-bottom: 10px;">
-                        <button class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;"
-                            onclick="selectAllCategories()">Select All</button>
-                        <button class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;"
-                            onclick="deselectAllCategories()">Deselect All</button>
+                    <label>Subjects <span id="categoryCount" class="count-meta">(all)</span></label>
+                    <div class="category-controls">
+                        <button class="link-btn" onclick="selectAllCategories()">select all</button>
+                        <span class="link-divider">·</span>
+                        <button class="link-btn" onclick="deselectAllCategories()">clear</button>
                     </div>
                     <div class="category-grid" id="categoryGrid">
                         <!-- Categories populated by JavaScript -->
@@ -81,51 +89,52 @@
 
                 <!-- Weighted Random Toggle -->
                 <div class="settings-section">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="weightedRandom" style="width: 18px; height: 18px;">
-                        <span>Prioritize previously missed questions</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 10px;">
-                        <input type="checkbox" id="shuffleAnswers" checked style="width: 18px; height: 18px;">
-                        <span>Shuffle answer options</span>
-                    </label>
+                    <label>Options</label>
+                    <div class="checkbox-group">
+                        <label class="check-row">
+                            <input type="checkbox" id="weightedRandom">
+                            <span>Prioritize previously missed questions</span>
+                        </label>
+                        <label class="check-row">
+                            <input type="checkbox" id="shuffleAnswers" checked>
+                            <span>Shuffle answer options</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <div id="resumePrompt" class="hidden"
-                style="background: #fef3c7; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                <p style="margin-bottom: 15px;">📋 You have a saved exam in progress. Would you like to resume?</p>
-                <button class="btn btn-warning" onclick="resumeExam()">Resume Exam</button>
-                <button class="btn btn-secondary" onclick="startNewExam()">Start New Exam</button>
+            <div id="resumePrompt" class="hidden resume-prompt">
+                <p class="resume-text"><span class="resume-mark">⁂</span> You have a saved exam in progress.</p>
+                <div class="resume-actions">
+                    <button class="btn btn-warning" onclick="resumeExam()">Resume</button>
+                    <button class="btn btn-secondary" onclick="startNewExam()">Start New</button>
+                </div>
             </div>
 
             <!-- Main Start Buttons -->
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <button id="startBtn" class="btn btn-primary btn-lg" style="padding: 15px 40px; font-size: 1.2rem;"
-                    onclick="startNewExam()">🎯 Exam Mode</button>
-                <button class="btn btn-success btn-lg" style="padding: 15px 40px; font-size: 1.2rem;"
-                    onclick="startStudyMode()">📚 Study Mode</button>
+            <h3 class="section-rule"><span class="section-mark">§ II.</span> <em>Begin</em></h3>
+            <div class="start-actions">
+                <button id="startBtn" class="btn btn-primary"
+                    onclick="startNewExam()">Begin Exam <span class="btn-arrow">→</span></button>
+                <button class="btn btn-success"
+                    onclick="startStudyMode()">Study Mode <span class="btn-arrow">→</span></button>
             </div>
-            <p style="margin-top: 15px; color: var(--text-secondary); font-size: 0.9rem;">Study Mode: See correct answer
-                immediately after each question</p>
+            <p class="hint">Study mode shows the correct answer immediately after each question.</p>
 
             <!-- Practice Modes -->
             <div class="practice-modes">
-                <button class="practice-mode-btn" id="missedBtn" onclick="startMissedMode()">🔄 Practice Missed (<span
-                        id="missedBtnCount">0</span>)</button>
-                <button class="practice-mode-btn" id="bookmarkedBtn" onclick="startBookmarkedMode()">⭐ Practice
-                    Bookmarked (<span id="bookmarkedBtnCount">0</span>)</button>
-                <button class="practice-mode-btn" onclick="openCheatSheet()">📘 Study Cheat Sheet</button>
+                <button class="practice-mode-btn" id="missedBtn" onclick="startMissedMode()">Practice missed <span class="practice-count">(<span id="missedBtnCount">0</span>)</span></button>
+                <button class="practice-mode-btn" id="bookmarkedBtn" onclick="startBookmarkedMode()">Bookmarked <span class="practice-count">(<span id="bookmarkedBtnCount">0</span>)</span></button>
+                <button class="practice-mode-btn" onclick="openCheatSheet()">Cheat sheet</button>
             </div>
 
-            <p style="margin-top: 20px;"><a href="index.html" style="color: #3b82f6;">← Back to Study
-                    Guide</a></p>
+            <p class="back-link"><a href="index.html">← Back to study guide</a></p>
 
             <!-- Previous Scores Log -->
             <div id="scoresLog" class="scores-log">
                 <h3>
-                    <span>📊 Previous Scores</span>
-                    <button class="clear-btn" onclick="clearScoreHistory()">Clear History</button>
+                    <span><span class="section-mark">§ III.</span> <em>Record of Attempts</em></span>
+                    <button class="clear-btn" onclick="clearScoreHistory()">Clear</button>
                 </h3>
                 <div id="scoresContainer"></div>
             </div>
@@ -135,7 +144,10 @@
         <!-- Exam Screen -->
         <div id="examScreen" class="hidden">
             <div class="header">
-                <h1>Arizona RE Exam</h1>
+                <div class="header-brand">
+                    <span class="brand-meta">Arizona RE</span>
+                    <span class="brand-title">Examination</span>
+                </div>
                 <div class="timer" id="timer">5:00:00</div>
             </div>
 
@@ -146,7 +158,7 @@
             <div class="question-card">
                 <div class="question-header">
                     <span class="question-number" id="questionNumber">Question 1 of 180</span>
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="question-meta">
                         <span class="category-tag" id="categoryTag">Category</span>
                         <button class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmark()"
                             title="Bookmark this question">☆</button>
@@ -155,59 +167,64 @@
                 <div class="question-text" id="questionText">Loading question...</div>
                 <div class="options" id="optionsContainer"></div>
                 <div class="explanation" id="explanation">
-                    <h4>✓ Explanation</h4>
+                    <h4>Note</h4>
                     <p id="explanationText"></p>
                 </div>
             </div>
 
             <div class="nav-buttons">
-                <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()">← Previous</button>
-                <button class="btn btn-warning" id="flagBtn" onclick="toggleFlag()">🚩 Mark for Review</button>
-                <button class="btn btn-secondary" id="nextBtn" onclick="nextQuestion()">Next →</button>
+                <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()"><span class="btn-arrow back">←</span> Previous</button>
+                <button class="btn btn-warning" id="flagBtn" onclick="toggleFlag()">Mark for review</button>
+                <button class="btn btn-secondary" id="nextBtn" onclick="nextQuestion()">Next <span class="btn-arrow">→</span></button>
             </div>
 
             <div class="navigator">
-                <h3>Question Navigator <span id="answeredCount">(0/180 answered)</span></h3>
+                <h3><span>Navigator</span> <span id="answeredCount" class="answered-count">0 / 180 answered</span></h3>
                 <div class="nav-grid" id="navGrid"></div>
                 <div class="legend">
                     <div class="legend-item">
-                        <div class="legend-box" style="background: white; border-color: #e2e8f0;"></div> Unanswered
+                        <span class="legend-mark legend-current"></span> Current
                     </div>
                     <div class="legend-item">
-                        <div class="legend-box" style="background: #d1fae5; border-color: #10b981;"></div> Answered
+                        <span class="legend-mark legend-answered"></span> Answered
                     </div>
                     <div class="legend-item">
-                        <div class="legend-box" style="background: #fef3c7; border-color: #f59e0b;"></div> Flagged
+                        <span class="legend-mark legend-correct"></span> Correct
                     </div>
                     <div class="legend-item">
-                        <div class="legend-box" style="background: #dbeafe; border-color: #3b82f6;"></div> Current
+                        <span class="legend-mark legend-incorrect"></span> Incorrect
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-mark legend-flagged"></span> Flagged
                     </div>
                 </div>
             </div>
 
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-success" onclick="submitExam()" style="padding: 15px 40px;">Submit Exam</button>
+            <div class="submit-row">
+                <button class="btn btn-success" id="submitBtn" onclick="submitExam()">Submit Examination</button>
             </div>
         </div>
 
         <!-- Results Screen -->
         <div id="resultsScreen" class="hidden">
             <div class="results-screen">
-                <h1 id="resultsTitle">Exam Complete!</h1>
+                <span class="results-eyebrow">Examination Concluded</span>
+                <h1 id="resultsTitle"><em>Final</em> Score</h1>
                 <div class="score-circle" id="scoreCircle">
                     <span id="scorePercent">0%</span>
                     <span id="scoreText">0/180</span>
                 </div>
-                <p id="passFailText" style="font-size: 1.5rem; margin-bottom: 30px;"></p>
+                <p id="passFailText"></p>
 
-                <button class="btn btn-primary" onclick="reviewExam()">Review Answers</button>
-                <button class="btn btn-secondary" onclick="startNewExam()">Take New Exam</button>
-                <button class="btn btn-warning" onclick="exportResults()">📄 Export Results</button>
-                <p style="margin-top: 20px;"><a href="index.html" style="color: #3b82f6;">← Back to Study
-                        Guide</a></p>
+                <div class="results-actions">
+                    <button class="btn btn-primary" onclick="reviewExam()">Review answers</button>
+                    <button class="btn btn-secondary" onclick="startNewExam()">New exam</button>
+                    <button class="btn btn-warning" onclick="exportResults()">Export</button>
+                </div>
+                <p class="back-link"><a href="index.html">← Back to study guide</a></p>
 
                 <div class="results-breakdown" id="resultsBreakdown">
-                    <h3>Score by Category</h3>
+                    <h3>By Subject</h3>
                     <div id="categoryScores"></div>
                 </div>
             </div>
@@ -218,7 +235,8 @@
     <div id="cheatSheetModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeCheatSheet()">&times;</span>
-            <h2 style="color: var(--text-primary); margin-bottom: 20px;">📘 Commonly Confused Concepts & Mnemonics</h2>
+            <span class="modal-eyebrow">Field Notes · Appendix A</span>
+            <h2><em>Commonly</em> Confused Concepts <span class="amp">&amp;</span> Mnemonics</h2>
 
             <div class="cheat-sheet-grid">
                 <!-- TYPES OF TENANCY (Requested) -->
@@ -641,95 +659,50 @@
                             <li><span class="mnemonic-highlight">E</span> - Enjoy (Exclude others)</li>
                         </ul>
                     </div>
-                    <!-- ESSENTIAL NUMBERS (Requested) -->
-                    <div class="mnemonic-card">
-                        <div class="mnemonic-title">Essential Numbers</div>
-                        <div class="mnemonic-body">
-                            <ul style="list-style: none; padding: 0;">
-                                <li><strong>1 Acre</strong> = 43,560 sq ft<br><span
-                                        style="color:#64748b; font-size:0.85em;">"4 elders driving 35 in a 60"</span>
-                                </li>
-                                <li style="margin-top:5px;"><strong>1 Mile</strong> = 5,280 ft<br><span
-                                        style="color:#64748b; font-size:0.85em;">"5 tomatoes" (5-2-8-0)</span></li>
-                                <li style="margin-top:5px;"><strong>1 Section</strong> = 640 Acres (1 sq mile)</li>
-                                <li style="margin-top:5px;"><strong>1 Township</strong> = 36 Sections</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- MATH FORMULAS (Requested) -->
-                    <div class="mnemonic-card">
-                        <div class="mnemonic-title">Math Formulas</div>
-                        <div class="mnemonic-body">
-                            <ul style="list-style: none; padding: 0;">
-                                <li><strong>T-Bar Method:</strong><br>Part / (Total × Rate)</li>
-                                <li style="margin-top:8px;"><strong>Cap Rate (IRV):</strong><br>Income / Value = Rate
-                                </li>
-                                <li style="margin-top:8px;"><strong>GRM:</strong><br>Price / Gross Monthly Rent</li>
-                                <li style="margin-top:8px;"><strong>Interest:</strong><br>Principal × Rate × Time</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- OWNERSHIP & DEEDS (Requested) -->
-                    <div class="mnemonic-card">
-                        <div class="mnemonic-title">Ownership & Deeds</div>
-                        <div class="mnemonic-body">
-                            <ul style="list-style: none; padding: 0;">
-                                <li><strong>Joint Tenancy:</strong><br>P-I-T-T + Right of Survivorship</li>
-                                <li style="margin-top:8px;"><strong>Tenancy in Common:</strong><br>Heirs inherit (No
-                                    survivorship)</li>
-                                <li style="margin-top:8px;"><strong>General Warranty:</strong><br>Best protection for
-                                    buyer</li>
-                                <li style="margin-top:8px;"><strong>Quitclaim:</strong><br>Least protection (clears
-                                    clouds)</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- WATER RIGHTS (Requested) -->
-                    <div class="mnemonic-card">
-                        <div class="mnemonic-title">Water Rights</div>
-                        <div class="mnemonic-body">
-                            <ul style="list-style: none; padding: 0;">
-                                <li><strong>Riparian</strong> = Rivers<br><span
-                                        style="color:#64748b; font-size:0.85em;">"R" for River (Flowing)</span></li>
-                                <li style="margin-top:8px;"><strong>Littoral</strong> = Lakes<br><span
-                                        style="color:#64748b; font-size:0.85em;">"L" for Lake (Standing)</span></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- LAND CHARACTERISTICS (Requested) -->
-                    <div class="mnemonic-card">
-                        <div class="mnemonic-title">Land Characteristics</div>
-                        <div class="mnemonic-body">
-                            <p style="margin-bottom:5px;"><strong>Physical:</strong></p>
-                            <ul style="list-style: none; padding: 0; margin-bottom:10px;">
-                                <li>Immobility, Indestructibility, Uniqueness</li>
-                            </ul>
-                            <p style="margin-bottom:5px;"><strong>Economic:</strong></p>
-                            <ul style="list-style: none; padding: 0;">
-                                <li>Scarcity, Improvements, Permanence, Situs (Location)</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- LIEN PRIORITY (Requested) -->
-                    <div class="mnemonic-card">
-                        <div class="mnemonic-title">Lien Priority</div>
-                        <div class="mnemonic-body">
-                            <ol style="padding-left: 20px;">
-                                <li><strong>Property Taxes</strong> (Always #1)</li>
-                                <li><strong>Special Assessments</strong></li>
-                                <li><strong>Mortgages / Mechanics</strong><br><span
-                                        style="color:#64748b; font-size:0.85em;">(By date & time recorded)</span></li>
-                            </ol>
-                        </div>
-                    </div>
-
-
                 </div>
+
+                <!-- MATH FORMULAS -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Math Formulas</div>
+                    <div class="mnemonic-body">
+                        <ul style="list-style: none; padding: 0;">
+                            <li><strong>T-Bar Method:</strong><br>Part / (Total × Rate)</li>
+                            <li style="margin-top:8px;"><strong>Cap Rate (IRV):</strong><br>Income / Value = Rate
+                            </li>
+                            <li style="margin-top:8px;"><strong>GRM:</strong><br>Price / Gross Monthly Rent</li>
+                            <li style="margin-top:8px;"><strong>Interest:</strong><br>Principal × Rate × Time</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LAND CHARACTERISTICS -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Land Characteristics</div>
+                    <div class="mnemonic-body">
+                        <p style="margin-bottom:5px;"><strong>Physical:</strong></p>
+                        <ul style="list-style: none; padding: 0; margin-bottom:10px;">
+                            <li>Immobility, Indestructibility, Uniqueness</li>
+                        </ul>
+                        <p style="margin-bottom:5px;"><strong>Economic:</strong></p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li>Scarcity, Improvements, Permanence, Situs (Location)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LIEN PRIORITY -->
+                <div class="mnemonic-card">
+                    <div class="mnemonic-title">Lien Priority</div>
+                    <div class="mnemonic-body">
+                        <ol style="padding-left: 20px;">
+                            <li><strong>Property Taxes</strong> (Always #1)</li>
+                            <li><strong>Special Assessments</strong></li>
+                            <li><strong>Mortgages / Mechanics</strong><br><span
+                                    style="color:#64748b; font-size:0.85em;">(By date & time recorded)</span></li>
+                        </ol>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
